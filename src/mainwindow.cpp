@@ -251,6 +251,72 @@ TitleWidget::handleMouseMove( QMouseEvent * e )
 
 
 //
+// CloseButton
+//
+
+CloseButton::CloseButton( QWidget * parent )
+	:	QAbstractButton( parent )
+{
+	setCheckable( false );
+
+	m_activePixmap = QPixmap( QStringLiteral( ":/img/dialog-close.png" ) );
+
+	auto source = m_activePixmap.toImage();
+	QImage target = QImage( source.width(), source.height(), QImage::Format_ARGB32 );
+
+	for( int x = 0; x < source.width(); ++x )
+	{
+		for( int y = 0; y < source.height(); ++y )
+		{
+			const auto g = qGray( source.pixel( x, y ) );
+			target.setPixelColor( x, y, QColor( g, g, g, source.pixelColor( x, y ).alpha() ) );
+		}
+	}
+
+	m_inactivePixmap = QPixmap::fromImage( target );
+
+	setFocusPolicy( Qt::NoFocus );
+}
+
+QSize
+CloseButton::sizeHint() const
+{
+	return { 16, 16 };
+}
+
+void
+CloseButton::paintEvent( QPaintEvent * e )
+{
+	QPainter p( this );
+
+	if( m_hovered )
+		p.drawPixmap( rect(), m_activePixmap );
+	else
+		p.drawPixmap( rect(), m_inactivePixmap );
+}
+
+void
+CloseButton::enterEvent( QEnterEvent * event )
+{
+	m_hovered = true;
+
+	update();
+
+	event->accept();
+}
+
+void
+CloseButton::leaveEvent( QEvent * event )
+{
+	m_hovered = false;
+
+	update();
+
+	event->accept();
+}
+
+
+//
 // MainWindow
 //
 
@@ -284,6 +350,13 @@ MainWindow::MainWindow()
 	m_recordButton->setText( tr( "Record" ) );
 	layout->addWidget( m_recordButton );
 	layout->addItem( new QSpacerItem( 10, 0, QSizePolicy::Expanding, QSizePolicy::Fixed ) );
+	auto clayout = new QVBoxLayout;
+	clayout->setContentsMargins( 0, 0, 0, 0 );
+	auto closeButton = new CloseButton( m_title );
+	clayout->addWidget( closeButton );
+	clayout->addItem( new QSpacerItem( 0, 0, QSizePolicy::Fixed, QSizePolicy::Expanding ) );
+	layout->addLayout( clayout );
+	connect( closeButton, &CloseButton::clicked, this, &QWidget::close );
 	vlayout->addWidget( m_title );
 	m_recordArea = new QWidget( m_c );
 	m_recordArea->setAttribute( Qt::WA_TranslucentBackground );
@@ -300,10 +373,6 @@ MainWindow::MainWindow()
 	grid->addWidget( h7, 2, 1 );
 	auto h8 = new ResizeHandle( ResizeHandle::TopLeftBotomRight, false, this, this );
 	grid->addWidget( h8, 2, 2 );
-}
-
-MainWindow::~MainWindow()
-{
 }
 
 void

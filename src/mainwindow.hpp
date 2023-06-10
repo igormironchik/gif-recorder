@@ -26,6 +26,7 @@
 #include <QToolButton>
 #include <QBitmap>
 #include <QFrame>
+#include <QAbstractButton>
 
 class MainWindow;
 
@@ -48,7 +49,7 @@ public:
 	};
 
 	ResizeHandle( Orientation o, bool withMove, QWidget * parent, MainWindow * obj );
-	~ResizeHandle() = default;
+	~ResizeHandle() override = default;
 
 	QSize minimumSizeHint() const override;
 	QSize sizeHint() const override;
@@ -84,7 +85,7 @@ class TitleWidget
 
 public:
 	TitleWidget( QWidget * parent, MainWindow * obj );
-	~TitleWidget() = default;
+	~TitleWidget() override = default;
 
 protected:
 	void mousePressEvent( QMouseEvent * e ) override;
@@ -104,6 +105,36 @@ private:
 
 
 //
+// CloseButton
+//
+
+//! Close button.
+class CloseButton
+	:	public QAbstractButton
+{
+	Q_OBJECT
+
+public:
+	explicit CloseButton( QWidget * parent );
+	~CloseButton() override = default;
+
+	QSize sizeHint() const override;
+
+protected:
+	void paintEvent( QPaintEvent * e ) override;
+	void enterEvent( QEnterEvent * event ) override;
+	void leaveEvent( QEvent * event ) override;
+
+private:
+	Q_DISABLE_COPY( CloseButton )
+
+	bool m_hovered = false;
+	QPixmap m_activePixmap;
+	QPixmap m_inactivePixmap;
+}; // class CloseButton
+
+
+//
 // MainWindow
 //
 
@@ -115,7 +146,7 @@ class MainWindow
 
 public:
 	MainWindow();
-	~MainWindow();
+	~MainWindow() override = default;
 
 protected:
 	void resizeEvent( QResizeEvent * e ) override;
