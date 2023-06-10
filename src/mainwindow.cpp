@@ -191,6 +191,64 @@ ResizeHandle::handleMouseMove( QMouseEvent * e )
 	QApplication::processEvents();
 }
 
+//
+// Title
+//
+
+TitleWidget::TitleWidget( QWidget * parent, MainWindow * obj )
+	:	QFrame( parent )
+	,	m_obj( obj )
+{
+	setFrameStyle( QFrame::StyledPanel | QFrame::Sunken );
+	setAutoFillBackground( true );
+	setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Fixed );
+}
+
+void
+TitleWidget::mousePressEvent( QMouseEvent * e )
+{
+	if( e->button() == Qt::LeftButton )
+	{
+		m_leftButtonPressed = true;
+		m_pos = e->globalPosition();
+	}
+
+	e->accept();
+}
+
+void
+TitleWidget::mouseReleaseEvent( QMouseEvent * e )
+{
+	if( e->button() == Qt::LeftButton && m_leftButtonPressed )
+	{
+		handleMouseMove( e );
+
+		m_leftButtonPressed = false;
+	}
+
+	e->accept();
+}
+
+void
+TitleWidget::mouseMoveEvent( QMouseEvent * e )
+{
+	if( m_leftButtonPressed )
+		handleMouseMove( e );
+
+	e->accept();
+}
+
+void
+TitleWidget::handleMouseMove( QMouseEvent * e )
+{
+	auto delta = e->globalPosition() - m_pos;
+	m_pos = e->globalPosition();
+
+	m_obj->move( m_obj->x() + qRound( delta.x() ),
+		m_obj->y() + qRound( delta.y() ) );
+	QApplication::processEvents();
+}
+
 
 //
 // MainWindow
@@ -219,10 +277,7 @@ MainWindow::MainWindow()
 	m_c = new QWidget( this );
 	auto vlayout = new QVBoxLayout( m_c );
 	vlayout->setContentsMargins( 0, 0, 0, 0 );
-	m_title = new QFrame( m_c );
-	m_title->setFrameStyle( QFrame::StyledPanel | QFrame::Sunken );
-	m_title->setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Fixed );
-	m_title->setAutoFillBackground( true );
+	m_title = new TitleWidget( m_c, this );
 	auto layout = new QHBoxLayout( m_title );
 	layout->setContentsMargins( 5, 5, 5, 5 );
 	m_recordButton = new QToolButton( m_title );

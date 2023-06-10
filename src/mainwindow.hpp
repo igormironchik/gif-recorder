@@ -68,8 +68,39 @@ private:
 	Orientation m_orient = Orientation::Horizontal;
 	bool m_leftButtonPressed = false;
 	bool m_withMove = false;
-	QPointF m_pos = { 0, 0 };
+	QPointF m_pos = { 0.0, 0.0 };
 }; // class ResizeHandle
+
+
+//
+// Title
+//
+
+//! Title widget.
+class TitleWidget
+	:	public QFrame
+{
+	Q_OBJECT
+
+public:
+	TitleWidget( QWidget * parent, MainWindow * obj );
+	~TitleWidget() = default;
+
+protected:
+	void mousePressEvent( QMouseEvent * e ) override;
+	void mouseReleaseEvent( QMouseEvent * e ) override;
+	void mouseMoveEvent( QMouseEvent * e ) override;
+
+private:
+	void handleMouseMove( QMouseEvent * e );
+
+private:
+	Q_DISABLE_COPY( TitleWidget )
+
+	MainWindow * m_obj = nullptr;
+	bool m_leftButtonPressed = false;
+	QPointF m_pos = { 0.0, 0.0 };
+}; // class TitleWidget
 
 
 //
@@ -92,7 +123,7 @@ protected:
 private:
 	Q_DISABLE_COPY( MainWindow )
 
-	QFrame * m_title = nullptr;
+	TitleWidget * m_title = nullptr;
 	QWidget * m_recordArea = nullptr;
 	QWidget * m_c = nullptr;
 	QToolButton * m_recordButton = nullptr;
