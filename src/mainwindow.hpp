@@ -25,6 +25,40 @@
 #include <QWidget>
 #include <QToolButton>
 #include <QBitmap>
+#include <QFrame>
+
+class MainWindow;
+
+//
+// ResizeHandle
+//
+
+//! Resize handle.
+class ResizeHandle
+	:	public QFrame
+{
+	Q_OBJECT
+
+public:
+	enum Orientation {
+		Horizontal = 0,
+		Vertical,
+		TopLeftBotomRight,
+		BottomLeftTopRight
+	};
+
+	ResizeHandle( Orientation o, QWidget * parent, MainWindow * obj );
+	~ResizeHandle() = default;
+
+	QSize minimumSizeHint() const override;
+	QSize sizeHint() const override;
+
+private:
+	Q_DISABLE_COPY( ResizeHandle )
+
+	MainWindow * m_obj = nullptr;
+	Orientation m_orient = Orientation::Horizontal;
+}; // class ResizeHandle
 
 
 //
@@ -43,12 +77,13 @@ public:
 
 protected:
 	void resizeEvent( QResizeEvent * e ) override;
-	void paintEvent( QPaintEvent * e ) override;
 
 private:
-	Q_DISABLE_COPY( MainWindow );
+	Q_DISABLE_COPY( MainWindow )
 
-	QWidget * m_title = nullptr;
+	QFrame * m_title = nullptr;
+	QWidget * m_recordArea = nullptr;
+	QWidget * m_c = nullptr;
 	QToolButton * m_recordButton = nullptr;
 	QBitmap m_mask;
 };// class MainWindow
