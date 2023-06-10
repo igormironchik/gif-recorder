@@ -30,16 +30,19 @@
 #include <QResizeEvent>
 #include <QPainter>
 #include <QPalette>
+#include <QMouseEvent>
+#include <QApplication>
 
 
 //
 // ResizeHandle
 //
 
-ResizeHandle::ResizeHandle( Orientation o, QWidget * parent, MainWindow * obj )
+ResizeHandle::ResizeHandle( Orientation o, bool withMove, QWidget * parent, MainWindow * obj )
 	:	QFrame( parent )
 	,	m_obj( obj )
 	,	m_orient( o )
+	,	m_withMove( withMove )
 {
 	setFrameStyle( QFrame::StyledPanel | QFrame::Sunken );
 	setAutoFillBackground( true );
@@ -88,6 +91,106 @@ ResizeHandle::sizeHint() const
 	return { 5, 5 };
 }
 
+void
+ResizeHandle::mousePressEvent( QMouseEvent * e )
+{
+	if( e->button() == Qt::LeftButton )
+	{
+		m_leftButtonPressed = true;
+		m_pos = e->globalPosition();
+	}
+
+	e->accept();
+}
+
+void
+ResizeHandle::mouseReleaseEvent( QMouseEvent * e )
+{
+	if( e->button() == Qt::LeftButton && m_leftButtonPressed )
+	{
+		handleMouseMove( e );
+
+		m_leftButtonPressed = false;
+	}
+
+	e->accept();
+}
+
+void
+ResizeHandle::mouseMoveEvent( QMouseEvent * e )
+{
+	if( m_leftButtonPressed )
+		handleMouseMove( e );
+
+	e->accept();
+}
+
+void
+ResizeHandle::handleMouseMove( QMouseEvent * e )
+{
+	auto delta = e->globalPosition() - m_pos;
+	m_pos = e->globalPosition();
+
+	QMargins m = { 0, 0, 0, 0 };
+
+	switch( m_orient )
+	{
+		case Horizontal :
+		{
+			if( m_withMove )
+				m.setLeft( qRound( -delta.x() ) );
+			else
+				m.setRight( qRound( delta.x() ) );
+		}
+			break;
+
+		case Vertical :
+		{
+			if( m_withMove )
+				m.setTop( qRound( -delta.y() ) );
+			else
+				m.setBottom( qRound( delta.y() ) );
+		}
+			break;
+
+		case TopLeftBotomRight :
+		{
+			if( m_withMove )
+			{
+				m.setTop( qRound( -delta.y() ) );
+				m.setLeft( qRound( -delta.x() ) );
+			}
+			else
+			{
+				m.setBottom( qRound( delta.y() ) );
+				m.setRight( qRound( delta.x() ) );
+			}
+		}
+			break;
+
+		case BottomLeftTopRight :
+		{
+			if( m_withMove )
+			{
+				m.setLeft( qRound( -delta.x() ) );
+				m.setBottom( qRound( delta.y() ) );
+			}
+			else
+			{
+				m.setRight( qRound( delta.x() ) );
+				m.setTop( qRound( -delta.y() ) );
+			}
+		}
+			break;
+
+		default :
+			break;
+	}
+
+	m_obj->setGeometry( m_obj->geometry() + m );
+	QApplication::processEvents();
+}
+
 
 //
 // MainWindow
@@ -103,14 +206,14 @@ MainWindow::MainWindow()
 	grid->setVerticalSpacing( 1 );
 	grid->setContentsMargins( 0, 0, 0, 0 );
 
-	auto h1 = new ResizeHandle( ResizeHandle::TopLeftBotomRight, this, this );
+	auto h1 = new ResizeHandle( ResizeHandle::TopLeftBotomRight, true, this, this );
 	grid->addWidget( h1, 0, 0 );
-	auto h2 = new ResizeHandle( ResizeHandle::Vertical, this, this );
+	auto h2 = new ResizeHandle( ResizeHandle::Vertical, true, this, this );
 	grid->addWidget( h2, 0, 1 );
-	auto h3 = new ResizeHandle( ResizeHandle::BottomLeftTopRight, this, this );
+	auto h3 = new ResizeHandle( ResizeHandle::BottomLeftTopRight, false, this, this );
 	grid->addWidget( h3, 0, 2 );
 
-	auto h4 = new ResizeHandle( ResizeHandle::Horizontal, this, this );
+	auto h4 = new ResizeHandle( ResizeHandle::Horizontal, true, this, this );
 	grid->addWidget( h4, 1, 0 );
 
 	m_c = new QWidget( this );
@@ -133,14 +236,14 @@ MainWindow::MainWindow()
 
 	grid->addWidget( m_c, 1, 1 );
 
-	auto h5 = new ResizeHandle( ResizeHandle::Horizontal, this, this );
+	auto h5 = new ResizeHandle( ResizeHandle::Horizontal, false, this, this );
 	grid->addWidget( h5, 1, 2 );
 
-	auto h6 = new ResizeHandle( ResizeHandle::BottomLeftTopRight, this, this );
+	auto h6 = new ResizeHandle( ResizeHandle::BottomLeftTopRight, true, this, this );
 	grid->addWidget( h6, 2, 0 );
-	auto h7 = new ResizeHandle( ResizeHandle::Vertical, this, this );
+	auto h7 = new ResizeHandle( ResizeHandle::Vertical, false, this, this );
 	grid->addWidget( h7, 2, 1 );
-	auto h8 = new ResizeHandle( ResizeHandle::TopLeftBotomRight, this, this );
+	auto h8 = new ResizeHandle( ResizeHandle::TopLeftBotomRight, false, this, this );
 	grid->addWidget( h8, 2, 2 );
 }
 

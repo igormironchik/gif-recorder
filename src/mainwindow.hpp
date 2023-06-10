@@ -47,17 +47,28 @@ public:
 		BottomLeftTopRight
 	};
 
-	ResizeHandle( Orientation o, QWidget * parent, MainWindow * obj );
+	ResizeHandle( Orientation o, bool withMove, QWidget * parent, MainWindow * obj );
 	~ResizeHandle() = default;
 
 	QSize minimumSizeHint() const override;
 	QSize sizeHint() const override;
+
+protected:
+	void mousePressEvent( QMouseEvent * e ) override;
+	void mouseReleaseEvent( QMouseEvent * e ) override;
+	void mouseMoveEvent( QMouseEvent * e ) override;
+
+private:
+	void handleMouseMove( QMouseEvent * e );
 
 private:
 	Q_DISABLE_COPY( ResizeHandle )
 
 	MainWindow * m_obj = nullptr;
 	Orientation m_orient = Orientation::Horizontal;
+	bool m_leftButtonPressed = false;
+	bool m_withMove = false;
+	QPointF m_pos = { 0, 0 };
 }; // class ResizeHandle
 
 
