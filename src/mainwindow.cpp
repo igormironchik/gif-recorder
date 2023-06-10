@@ -26,11 +26,10 @@
 // Qt include.
 #include <QHBoxLayout>
 #include <QVBoxLayout>
-#include <QToolButton>
 #include <QSpacerItem>
-#include <QMoveEvent>
 #include <QResizeEvent>
-#include <QCloseEvent>
+#include <QPainter>
+#include <QPalette>
 
 
 //
@@ -38,62 +37,54 @@
 //
 
 MainWindow::MainWindow()
-	:	QWidget( nullptr, Qt::WindowStaysOnTopHint | Qt::WindowDoesNotAcceptFocus |
-				 Qt::WindowTransparentForInput )
+	:	QWidget( nullptr, Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint )
 {
-	setWindowTitle( tr( "GIF Recorder" ) );
-	setAttribute( Qt::WA_TranslucentBackground, true );
+	setAttribute( Qt::WA_TranslucentBackground );
 
-	m_w = new QWidget( nullptr, Qt::WindowStaysOnTopHint | Qt::CustomizeWindowHint );
-	auto vlayout = new QVBoxLayout( m_w );
+	auto vlayout = new QVBoxLayout( this );
 	vlayout->setContentsMargins( 0, 0, 0, 0 );
-	auto layout = new QHBoxLayout;
-	layout->setContentsMargins( 0, 0, 0, 0 );
-	auto button = new QToolButton( this );
-	button->setText( tr( "Record" ) );
-	layout->addWidget( button );
+	m_title = new QWidget( this );
+	m_title->setAutoFillBackground( true );
+	auto layout = new QHBoxLayout( m_title );
+	layout->setContentsMargins( 5, 5, 5, 0 );
+	m_recordButton = new QToolButton( m_title );
+	m_recordButton->setText( tr( "Record" ) );
+	layout->addWidget( m_recordButton );
 	layout->addItem( new QSpacerItem( 10, 0, QSizePolicy::Expanding, QSizePolicy::Fixed ) );
-	vlayout->addLayout( layout );
+
+	vlayout->addWidget( m_title );
 	vlayout->addItem( new QSpacerItem( 0, 0, QSizePolicy::Fixed, QSizePolicy::Expanding ) );
-	m_w->setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Fixed );
-	m_w->resize( 800, button->sizeHint().height() );
-	m_w->move( geometry().x(), geometry().y() );
-	m_w->show();
 }
 
 MainWindow::~MainWindow()
 {
-	delete m_w;
-}
-
-void
-MainWindow::moveEvent( QMoveEvent * e )
-{
-	m_w->move( geometry().x(), geometry().y() );
-
-	e->accept();
 }
 
 void
 MainWindow::resizeEvent( QResizeEvent * e )
 {
-	m_w->resize( e->size().width(), m_w->height() );
+	m_mask = QBitmap( e->size().width(), e->size().height() );
+
+	QPainter p( &m_mask );
+	p.setBrush( Qt::color1 );
+	p.setPen( Qt::color1 );
+	p.drawRect( rect() );
+	p.setPen( Qt::color0 );
+	p.setBrush( Qt::color0 );
+	const auto xy = m_title->rect().bottomLeft() + QPoint( 5, 5 );
+	p.drawRect( xy.x(), xy.y(), width() - 10, height() - m_title->rect().height() - 10 );
+
+	setMask( m_mask );
 
 	e->accept();
 }
 
 void
-MainWindow::closeEvent( QCloseEvent * e )
+MainWindow::paintEvent( QPaintEvent * )
 {
-	m_w->close();
+	QPainter p( this );
+	p.setPen( palette().color( QPalette::Window ) );
+	p.setBrush( palette().brush( QPalette::Window ) );
 
-	e->accept();
-}
-
-bool
-MainWindow::nativeEvent( const QByteArray & eventType, void * message, qintptr * result )
-{
-	static int i = 0;
-	qDebug() << eventType << ++i;
-	return false;
+	p.drawRect( rect() );
 }

@@ -23,7 +23,8 @@
 #pragma once
 
 #include <QWidget>
-#include <QScopedPointer>
+#include <QToolButton>
+#include <QBitmap>
 
 
 //
@@ -41,13 +42,13 @@ public:
 	~MainWindow();
 
 protected:
-	void moveEvent( QMoveEvent * e ) override;
 	void resizeEvent( QResizeEvent * e ) override;
-	void closeEvent( QCloseEvent * e ) override;
-	bool nativeEvent( const QByteArray & eventType, void * message, qintptr * result ) override;
+	void paintEvent( QPaintEvent * e ) override;
 
 private:
 	Q_DISABLE_COPY( MainWindow );
 
-	QWidget * m_w = nullptr;
+	QWidget * m_title = nullptr;
+	QToolButton * m_recordButton = nullptr;
+	QBitmap m_mask;
 };// class MainWindow
