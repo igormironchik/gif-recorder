@@ -33,6 +33,10 @@
 #include <QPalette>
 #include <QMouseEvent>
 #include <QApplication>
+#include <QFileDialog>
+#include <QStandardPaths>
+#include <QScreen>
+#include <QMessageBox>
 
 
 //
@@ -352,13 +356,16 @@ MainWindow::MainWindow()
 	connect( m_recordButton, &QToolButton::clicked, this, &MainWindow::onRecord );
 	layout->addWidget( m_recordButton );
 	layout->addItem( new QSpacerItem( 10, 0, QSizePolicy::Expanding, QSizePolicy::Fixed ) );
+	m_msg = new QLabel( m_title );
+	layout->addWidget( m_msg );
+	layout->addItem( new QSpacerItem( 10, 0, QSizePolicy::Expanding, QSizePolicy::Fixed ) );
 	m_settingsButton = new QToolButton( m_title );
 	m_settingsButton->setIcon( QIcon( ":/img/applications-system.png" ) );
 	layout->addWidget( m_settingsButton );
 	connect( m_settingsButton, &QToolButton::clicked, this, &MainWindow::onSettings );
-	auto closeButton = new CloseButton( m_title );
-	layout->addWidget( closeButton );
-	connect( closeButton, &CloseButton::clicked, this, &QWidget::close );
+	m_closeButton = new CloseButton( m_title );
+	layout->addWidget( m_closeButton );
+	connect( m_closeButton, &CloseButton::clicked, this, &QWidget::close );
 	vlayout->addWidget( m_title );
 	m_recordArea = new QWidget( m_c );
 	m_recordArea->setAttribute( Qt::WA_TranslucentBackground );
@@ -375,6 +382,9 @@ MainWindow::MainWindow()
 	grid->addWidget( h7, 2, 1 );
 	auto h8 = new ResizeHandle( ResizeHandle::TopLeftBotomRight, false, this, this );
 	grid->addWidget( h8, 2, 2 );
+
+	m_timer = new QTimer( this );
+	connect( m_timer, &QTimer::timeout, this, &MainWindow::onTimer );
 }
 
 void
@@ -413,12 +423,131 @@ MainWindow::onRecord()
 	{
 		m_recordButton->setText( tr( "Record" ) );
 		m_settingsButton->setEnabled( true );
+		m_timer->stop();
+
+		auto fileName = QFileDialog::getSaveFileName( this, tr( "Save As" ),
+			QStandardPaths::standardLocations( QStandardPaths::PicturesLocation ).first(),
+			tr( "GIF (*.gif)" ) );
+
+		if( !fileName.isEmpty() )
+		{
+			if( !fileName.toLower().endsWith( ".gif" ) )
+				fileName.append( ".gif" );
+
+			save( fileName );
+		}
+		else
+			m_frames.clear();
 	}
 	else
 	{
 		m_recordButton->setText( tr( "Stop" ) );
 		m_settingsButton->setEnabled( false );
+		m_timer->start( 1000 / m_fps );
+		makeFrame();
 	}
 
 	m_recording = !m_recording;
+}
+
+void
+MainWindow::onTimer()
+{
+	makeFrame();
+}
+
+namespace /* anonymous */ {
+
+Magick::Image
+convert( const QImage & img )
+{
+	Magick::Image mimg( Magick::Geometry( img.width(), img.height() ),
+		Magick::ColorRGB( 0.0, 0.0, 0.0 ) );
+
+	const double scale = 1.0 / 256.0;
+
+	mimg.modifyImage();
+
+	Magick::PixelPacket * pixels;
+	Magick::ColorRGB mgc;
+
+	for( int y = 0; y < img.height(); ++y)
+	{
+		pixels = mimg.setPixels( 0, y, mimg.columns(), 1 );
+
+		for( int x = 0; x < img.width(); ++x )
+		{
+			QColor pix = img.pixel( x, y );
+
+			mgc.red( scale * pix.red() );
+			mgc.green( scale * pix.green() );
+			mgc.blue( scale * pix.blue() );
+
+			*pixels++ = mgc;
+		}
+
+		mimg.syncPixels();
+	}
+
+	return mimg;
+}
+
+} /* namespace anonymous */
+
+void
+MainWindow::makeFrame()
+{
+	const auto p = mapToGlobal( m_recordArea->pos() );
+
+	try {
+		auto img = convert( QApplication::primaryScreen()->grabWindow( 0, p.x(), p.y(),
+			m_recordArea->width(), m_recordArea->height() ).toImage() );
+		img.animationDelay( 100 / m_fps );
+		m_frames.push_back( img );
+	}
+	catch( const Magick::Exception & )
+	{
+		QMessageBox::critical( this, tr( "Resources exceeded..." ),
+			tr( "You were used all available to ImageMagick resources. Recording is stopped." ) );
+
+		onRecord();
+	}
+}
+
+void
+MainWindow::save( const QString & fileName )
+{
+	m_recordButton->setEnabled( false );
+	m_settingsButton->setEnabled( false );
+	m_closeButton->setEnabled( false );
+
+	m_msg->setText( tr( "Writing GIF... Please wait." ) );
+
+	QApplication::processEvents();
+
+	try {
+		std::vector< Magick::Image > tmp;
+
+		Magick::optimizeImageLayers( &tmp, m_frames.begin(), m_frames.end() );
+
+		Magick::writeImages( tmp.begin(), tmp.end(), fileName.toStdString() );
+	}
+	catch( const Magick::Exception & x )
+	{
+		QMessageBox::critical( this, tr( "Failed to save GIF..." ),
+			QString::fromLocal8Bit( x.what() ) );
+	}
+	catch( const std::exception & x )
+	{
+		QMessageBox::critical( this, tr( "Failed to save GIF..." ),
+			QString::fromLocal8Bit( x.what() ) );
+	}
+
+	m_recordButton->setEnabled( true );
+	m_settingsButton->setEnabled( true );
+	m_closeButton->setEnabled( true );
+
+	m_msg->setText( {} );
+
+	m_frames.clear();
 }

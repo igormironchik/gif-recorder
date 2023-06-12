@@ -22,11 +22,22 @@
 
 #pragma once
 
+// Qt include.
 #include <QWidget>
 #include <QToolButton>
 #include <QBitmap>
 #include <QFrame>
 #include <QAbstractButton>
+#include <QTimer>
+#include <QLabel>
+
+// Magick++ include.
+#include <Magick++.h>
+#include <Magick++/Exception.h>
+
+// C++ include.
+#include <vector>
+
 
 class MainWindow;
 
@@ -154,6 +165,11 @@ protected:
 private slots:
 	void onSettings();
 	void onRecord();
+	void onTimer();
+
+private:
+	void makeFrame();
+	void save( const QString & fileName );
 
 private:
 	Q_DISABLE_COPY( MainWindow )
@@ -163,8 +179,13 @@ private:
 	QWidget * m_c = nullptr;
 	QToolButton * m_recordButton = nullptr;
 	QToolButton * m_settingsButton = nullptr;
+	CloseButton * m_closeButton = nullptr;
+	QTimer * m_timer = nullptr;
+	QLabel * m_msg = nullptr;
 	QBitmap m_mask;
 	int m_fps = 24;
 	bool m_grabCursor = true;
 	bool m_recording = false;
+	std::vector< Magick::Image > m_frames;
+	QImage m_img;
 };// class MainWindow
