@@ -38,6 +38,11 @@
 #include <QScreen>
 #include <QMessageBox>
 
+#ifdef Q_OS_LINUX
+#include <X11/Xlib.h>
+#include <X11/extensions/Xfixes.h>
+#endif
+
 
 //
 // ResizeHandle
@@ -492,10 +497,138 @@ convert( const QImage & img )
 	return mimg;
 }
 
-QPair< QImage, QRect >
-grabMouseCursor()
+#ifdef Q_OS_LINUX
+
+QImage qimageFromXImage( XImage * xi )
 {
-	return {};
+	QImage::Format format = QImage::Format_ARGB32_Premultiplied;
+	if( xi->depth == 24 )
+		format = QImage::Format_RGB32;
+	else if( xi->depth == 16 )
+		format = QImage::Format_RGB16;
+
+	QImage image = QImage( reinterpret_cast< uchar* >( xi->data ),
+		xi->width, xi->height, xi->bytes_per_line, format ).copy();
+
+	if( ( QSysInfo::ByteOrder == QSysInfo::LittleEndian && xi->byte_order == MSBFirst ) ||
+		( QSysInfo::ByteOrder == QSysInfo::BigEndian && xi->byte_order == LSBFirst ) )
+	{
+		for( int i = 0; i < image.height(); ++i)
+		{
+			if( xi->depth == 16 )
+			{
+				ushort * p = reinterpret_cast< ushort* >( image.scanLine( i ) );
+				ushort * end = p + image.width();
+				while( p < end )
+				{
+					*p = ( ( *p << 8 ) & 0xff00 ) | ( ( *p >> 8 ) & 0x00ff );
+					++p;
+				}
+			}
+			else
+			{
+				uint * p = reinterpret_cast< uint* >( image.scanLine( i ) );
+				uint * end = p + image.width();
+				while( p < end )
+				{
+					*p = ( ( *p << 24 ) & 0xff000000 ) | ( ( *p << 8 ) & 0x00ff0000 ) |
+						( ( *p >> 8 ) & 0x0000ff00 ) | ( ( *p >> 24 ) & 0x000000ff );
+					++p;
+				}
+			}
+		}
+	}
+
+	if( format == QImage::Format_RGB32 )
+	{
+		QRgb * p = reinterpret_cast< QRgb* >( image.bits() );
+		for( int y = 0; y < xi->height; ++y )
+		{
+			for( int x = 0; x < xi->width; ++x )
+				p[ x ] |= 0xff000000;
+			p += xi->bytes_per_line / 4;
+		}
+	}
+
+	return image;
+}
+
+#endif // Q_OS_LINUX
+
+QPair< QImage, QRect >
+grabMouseCursor( const QRect & r )
+{
+	QImage cursorImage;
+	QPoint cursorPos( -1, -1 );
+	int w = 0;
+	int h = 0;
+
+#ifdef Q_OS_LINUX
+	// auto display = QApplication::platformNativeInterface();
+
+	Display* display = XOpenDisplay( nullptr );
+
+	XFixesCursorImage * cursor = XFixesGetCursorImage( display );
+
+	cursorPos = r.contains( QPoint( cursor->x - cursor->xhot, cursor->y - cursor->yhot ) ) ?
+		QPoint( cursor->x - cursor->xhot- r.x(), cursor->y - cursor->yhot - r.y() ) :
+		QPoint( -1, -1 );
+
+	std::vector< uint32_t > pixels( cursor->width * cursor->height );
+
+	w = cursorPos.x() != -1 ? ( cursor->x + cursor->width <= r.x() + r.width() ? cursor->width :
+		r.width() - cursorPos.x() ) : 0;
+	h = cursorPos.y() != -1 ? ( cursor->y + cursor->height <= r.y() + r.height() ? cursor->height :
+		r.height() - cursorPos.y() ) : 0;
+
+	for( size_t i = 0; i < pixels.size(); ++i )
+		pixels[ i ] = cursor->pixels[ i ];
+
+	cursorImage = QImage( (uchar*)( pixels.data() ), w, h,
+		QImage::Format_ARGB32_Premultiplied).copy();
+
+	XFree( cursor );
+
+	XCloseDisplay( display );
+#elif defined( Q_OS_WINDOWS )
+	//    HWND hwnd = GetDesktopWindow();
+	//    HDC hdc = GetWindowDC(hwnd);
+	//    HDC hdcMem = CreateCompatibleDC(hdc);
+
+	//    RECT rect = { 0, 0, GetDeviceCaps(hdc, HORZRES), GetDeviceCaps(hdc, VERTRES) };
+	//    const auto goodArea = QRect(rect.left, rect.top, rect.right, rect.bottom).contains(area);
+	//    if (!goodArea) {
+	//        screen = QRect(rect.left, rect.top, rect.right, rect.bottom);
+	//    } else {
+	//        screen = area;
+	//    }
+
+	//    HBITMAP hbitmap(nullptr);
+	//    hbitmap = CreateCompatibleBitmap(hdc, screen.width(), screen.height());
+	//    SelectObject(hdcMem, hbitmap);
+	//    BitBlt(hdcMem, 0, 0, screen.width(), screen.height(), hdc, screen.x(), screen.y(), SRCCOPY);
+
+	//    /* draw mouse cursor into DC
+	//     * https://stackoverflow.com/a/48925443/5446734
+	//     * */
+	//    CURSORINFO cursor = { sizeof(cursor) };
+	//    if (GetCursorInfo(&cursor) && cursor.flags == CURSOR_SHOWING) {
+	//        RECT rect;
+	//        GetWindowRect(hwnd, &rect);
+	//        ICONINFO info = { sizeof(info) };
+	//        GetIconInfo(cursor.hCursor, &info);
+	//        const int x = (cursor.ptScreenPos.x - rect.left - rect.left - info.xHotspot) - screen.left();
+	//        const int y = (cursor.ptScreenPos.y - rect.left - rect.left - info.yHotspot) - screen.top();
+	//        BITMAP bmpCursor = { 0 };
+	//        GetObject(info.hbmColor, sizeof(bmpCursor), &bmpCursor);
+	//        DrawIconEx(hdcMem, x, y, cursor.hCursor, bmpCursor.bmWidth, bmpCursor.bmHeight,
+	//                   0, nullptr, DI_NORMAL);
+	//    }
+
+	//    qimage = QtWin::imageFromHBITMAP(hdc, hbitmap, screen.width(), screen.height());
+#endif
+
+	return { cursorImage, { cursorPos, QSize( w, h ) } };
 }
 
 } /* namespace anonymous */
@@ -513,7 +646,8 @@ MainWindow::makeFrame()
 		{
 			QImage ci;
 			QRect cr;
-			std::tie( ci, cr ) = grabMouseCursor();
+			std::tie( ci, cr ) = grabMouseCursor( QRect( mapToGlobal( m_recordArea->pos() ),
+				QSize( m_recordArea->width(), m_recordArea->height() ) ) );
 
 			QPainter p( &qimg );
 			p.drawImage( cr, ci, ci.rect() );
