@@ -5,13 +5,16 @@ set( CMAKE_AUTOMOC ON )
 set( CMAKE_AUTORCC ON )
 set( CMAKE_AUTOUIC ON )
 
-find_package(Qt6Core REQUIRED)
-find_package(Qt6Widgets REQUIRED)
-find_package(Qt6Gui REQUIRED)
+find_package( Qt6Core REQUIRED )
+find_package( Qt6Widgets REQUIRED )
+find_package( Qt6Gui REQUIRED )
 
 set( SRC main.cpp
 	mainwindow.hpp
-	mainwindow.cpp )
+	mainwindow.cpp
+	settings.hpp
+	settings.cpp
+	settings.ui )
 
 qt6_add_resources( SRC resources.qrc )
 

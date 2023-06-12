@@ -22,6 +22,7 @@
 
 // GIF recorder include.
 #include "mainwindow.hpp"
+#include "settings.hpp"
 
 // Qt include.
 #include <QHBoxLayout>
@@ -350,12 +351,12 @@ MainWindow::MainWindow()
 	m_recordButton->setText( tr( "Record" ) );
 	layout->addWidget( m_recordButton );
 	layout->addItem( new QSpacerItem( 10, 0, QSizePolicy::Expanding, QSizePolicy::Fixed ) );
-	auto clayout = new QVBoxLayout;
-	clayout->setContentsMargins( 0, 0, 0, 0 );
+	auto settings = new QToolButton( m_title );
+	settings->setIcon( QIcon( ":/img/applications-system.png" ) );
+	layout->addWidget( settings );
+	connect( settings, &QToolButton::clicked, this, &MainWindow::onSettings );
 	auto closeButton = new CloseButton( m_title );
-	clayout->addWidget( closeButton );
-	clayout->addItem( new QSpacerItem( 0, 0, QSizePolicy::Fixed, QSizePolicy::Expanding ) );
-	layout->addLayout( clayout );
+	layout->addWidget( closeButton );
 	connect( closeButton, &CloseButton::clicked, this, &QWidget::close );
 	vlayout->addWidget( m_title );
 	m_recordArea = new QWidget( m_c );
@@ -390,4 +391,16 @@ MainWindow::resizeEvent( QResizeEvent * e )
 	setMask( m_mask );
 
 	e->accept();
+}
+
+void
+MainWindow::onSettings()
+{
+	Settings dlg( m_fps, m_grabCursor, this );
+
+	if( dlg.exec() == QDialog::Accepted )
+	{
+		m_fps = dlg.fps();
+		m_grabCursor = dlg.grabCursor();
+	}
 }

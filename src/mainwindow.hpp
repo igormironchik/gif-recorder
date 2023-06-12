@@ -151,6 +151,9 @@ public:
 protected:
 	void resizeEvent( QResizeEvent * e ) override;
 
+private slots:
+	void onSettings();
+
 private:
 	Q_DISABLE_COPY( MainWindow )
 
@@ -159,4 +162,6 @@ private:
 	QWidget * m_c = nullptr;
 	QToolButton * m_recordButton = nullptr;
 	QBitmap m_mask;
+	int m_fps = 24;
+	bool m_grabCursor = true;
 };// class MainWindow
