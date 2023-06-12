@@ -492,6 +492,12 @@ convert( const QImage & img )
 	return mimg;
 }
 
+QPair< QImage, QRect >
+grabMouseCursor()
+{
+	return {};
+}
+
 } /* namespace anonymous */
 
 void
@@ -500,8 +506,20 @@ MainWindow::makeFrame()
 	const auto p = mapToGlobal( m_recordArea->pos() );
 
 	try {
-		auto img = convert( QApplication::primaryScreen()->grabWindow( 0, p.x(), p.y(),
-			m_recordArea->width(), m_recordArea->height() ).toImage() );
+		auto qimg = QApplication::primaryScreen()->grabWindow( 0, p.x(), p.y(),
+			m_recordArea->width(), m_recordArea->height() ).toImage();
+
+		if( m_grabCursor )
+		{
+			QImage ci;
+			QRect cr;
+			std::tie( ci, cr ) = grabMouseCursor();
+
+			QPainter p( &qimg );
+			p.drawImage( cr, ci, ci.rect() );
+		}
+
+		auto img = convert( qimg );
 		img.animationDelay( 100 / m_fps );
 		m_frames.push_back( img );
 	}
