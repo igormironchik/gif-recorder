@@ -153,6 +153,7 @@ protected:
 
 private slots:
 	void onSettings();
+	void onRecord();
 
 private:
 	Q_DISABLE_COPY( MainWindow )
@@ -161,7 +162,9 @@ private:
 	QWidget * m_recordArea = nullptr;
 	QWidget * m_c = nullptr;
 	QToolButton * m_recordButton = nullptr;
+	QToolButton * m_settingsButton = nullptr;
 	QBitmap m_mask;
 	int m_fps = 24;
 	bool m_grabCursor = true;
+	bool m_recording = false;
 };// class MainWindow

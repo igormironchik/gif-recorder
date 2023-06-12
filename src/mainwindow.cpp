@@ -349,12 +349,13 @@ MainWindow::MainWindow()
 	layout->setContentsMargins( 5, 5, 5, 5 );
 	m_recordButton = new QToolButton( m_title );
 	m_recordButton->setText( tr( "Record" ) );
+	connect( m_recordButton, &QToolButton::clicked, this, &MainWindow::onRecord );
 	layout->addWidget( m_recordButton );
 	layout->addItem( new QSpacerItem( 10, 0, QSizePolicy::Expanding, QSizePolicy::Fixed ) );
-	auto settings = new QToolButton( m_title );
-	settings->setIcon( QIcon( ":/img/applications-system.png" ) );
-	layout->addWidget( settings );
-	connect( settings, &QToolButton::clicked, this, &MainWindow::onSettings );
+	m_settingsButton = new QToolButton( m_title );
+	m_settingsButton->setIcon( QIcon( ":/img/applications-system.png" ) );
+	layout->addWidget( m_settingsButton );
+	connect( m_settingsButton, &QToolButton::clicked, this, &MainWindow::onSettings );
 	auto closeButton = new CloseButton( m_title );
 	layout->addWidget( closeButton );
 	connect( closeButton, &CloseButton::clicked, this, &QWidget::close );
@@ -403,4 +404,21 @@ MainWindow::onSettings()
 		m_fps = dlg.fps();
 		m_grabCursor = dlg.grabCursor();
 	}
+}
+
+void
+MainWindow::onRecord()
+{
+	if( m_recording )
+	{
+		m_recordButton->setText( tr( "Record" ) );
+		m_settingsButton->setEnabled( true );
+	}
+	else
+	{
+		m_recordButton->setText( tr( "Stop" ) );
+		m_settingsButton->setEnabled( false );
+	}
+
+	m_recording = !m_recording;
 }
