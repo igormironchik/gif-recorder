@@ -570,7 +570,8 @@ grabMouseCursor( const QRect & r )
 
 	XFixesCursorImage * cursor = XFixesGetCursorImage( display );
 
-	cursorPos = r.contains( QPoint( cursor->x - cursor->xhot, cursor->y - cursor->yhot ) ) ?
+	cursorPos = r.intersects( { QPoint( cursor->x - cursor->xhot, cursor->y - cursor->yhot ),
+			QSize( cursor->width, cursor->height ) } ) ?
 		QPoint( cursor->x - cursor->xhot- r.x(), cursor->y - cursor->yhot - r.y() ) :
 		QPoint( -1, -1 );
 
