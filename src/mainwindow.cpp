@@ -577,10 +577,8 @@ grabMouseCursor( const QRect & r )
 
 	std::vector< uint32_t > pixels( cursor->width * cursor->height );
 
-	w = cursorPos.x() != -1 ? ( cursor->x + cursor->width <= r.x() + r.width() ? cursor->width :
-		r.width() - cursorPos.x() ) : 0;
-	h = cursorPos.y() != -1 ? ( cursor->y + cursor->height <= r.y() + r.height() ? cursor->height :
-		r.height() - cursorPos.y() ) : 0;
+	w = cursorPos.x() != -1 ? cursor->width : 0;
+	h = cursorPos.y() != -1 ? cursor->height : 0;
 
 	for( size_t i = 0; i < pixels.size(); ++i )
 		pixels[ i ] = cursor->pixels[ i ];
