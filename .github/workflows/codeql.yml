@@ -31,7 +31,7 @@ jobs:
       with:
         version: '6.5.1'
         
-    - run: sudo apt install libmagickcore-6.q16-dev libmagick++-6.q16-dev
+    - run: sudo apt install libmagickcore-6.q16-dev libmagick++-6.q16-dev libxcb-xfixes0-dev
 
     - run: |
        cmake .
