@@ -37,6 +37,9 @@
 #include <QStandardPaths>
 #include <QScreen>
 #include <QMessageBox>
+#include <QRunnable>
+#include <QThreadPool>
+#include <QCloseEvent>
 
 #ifdef Q_OS_LINUX
 #include <X11/Xlib.h>
@@ -46,6 +49,9 @@
 #ifdef Q_OS_WINDOWS
 #include <Windows.h>
 #endif
+
+// C++ include.
+#include <exception>
 
 
 //
@@ -716,23 +722,76 @@ MainWindow::makeFrame()
 	}
 }
 
+namespace /* anonymous */ {
+
+class WriteGIF final
+	:	public QRunnable
+{
+public:
+	WriteGIF( std::vector< Magick::Image >::iterator first,
+		std::vector< Magick::Image >::iterator last,
+		const std::string & fileName )
+		:	m_first( first )
+		,	m_last( last )
+		,	m_fileName( fileName )
+	{
+		setAutoDelete( false );
+	}
+
+	~WriteGIF() noexcept override = default;
+
+	void run() override
+	{
+		try {
+			std::vector< Magick::Image > tmp;
+
+			Magick::optimizeImageLayers( &tmp, m_first, m_last );
+
+			Magick::writeImages( tmp.begin(), tmp.end(), m_fileName );
+		}
+		catch( ... )
+		{
+			m_eptr = std::current_exception();
+		}
+	}
+
+	std::exception_ptr exception() const
+	{
+		return m_eptr;
+	}
+
+private:
+	std::vector< Magick::Image >::iterator m_first;
+	std::vector< Magick::Image >::iterator m_last;
+	std::string m_fileName;
+	std::exception_ptr m_eptr;
+}; // class WriteGIF
+
+} /* namespase anonymous */
+
 void
 MainWindow::save( const QString & fileName )
 {
 	m_recordButton->setEnabled( false );
 	m_settingsButton->setEnabled( false );
-	m_closeButton->setEnabled( false );
 
 	m_msg->setText( tr( "Writing GIF... Please wait." ) );
 
 	QApplication::processEvents();
 
 	try {
-		std::vector< Magick::Image > tmp;
+		m_busy = true;
 
-		Magick::optimizeImageLayers( &tmp, m_frames.begin(), m_frames.end() );
+		WriteGIF runnable( m_frames.begin(), m_frames.end(), fileName.toStdString() );
+		QThreadPool::globalInstance()->start( &runnable );
 
-		Magick::writeImages( tmp.begin(), tmp.end(), fileName.toStdString() );
+		while( !QThreadPool::globalInstance()->waitForDone( 100 / 6 ) )
+			QApplication::processEvents();
+
+		m_busy = false;
+
+		if( runnable.exception() )
+			std::rethrow_exception( runnable.exception() );
 	}
 	catch( const Magick::Exception & x )
 	{
@@ -747,9 +806,25 @@ MainWindow::save( const QString & fileName )
 
 	m_recordButton->setEnabled( true );
 	m_settingsButton->setEnabled( true );
-	m_closeButton->setEnabled( true );
 
 	m_msg->setText( {} );
 
 	m_frames.clear();
+}
+
+void
+MainWindow::closeEvent( QCloseEvent * e )
+{
+	if ( m_busy )
+	{
+		const auto btn = QMessageBox::question( this, tr( "GIF recorder is busy..." ),
+			tr( "GIF recorder is busy.\nDo you want to terminate the application?" ) );
+
+		if( btn == QMessageBox::Yes )
+			exit( -1 );
+		else
+			e->ignore();
+	}
+	else
+		e->accept();
 }

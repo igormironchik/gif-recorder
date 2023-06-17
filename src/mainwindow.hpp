@@ -161,6 +161,7 @@ public:
 
 protected:
 	void resizeEvent( QResizeEvent * e ) override;
+	void closeEvent( QCloseEvent * e ) override;
 
 private slots:
 	void onSettings();
@@ -186,6 +187,7 @@ private:
 	int m_fps = 24;
 	bool m_grabCursor = true;
 	bool m_recording = false;
+	bool m_busy = false;
 	std::vector< Magick::Image > m_frames;
 	QImage m_img;
 };// class MainWindow
