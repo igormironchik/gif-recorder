@@ -691,11 +691,11 @@ grabMouseCursor( const QRect & r, const QImage & i )
 void
 MainWindow::makeFrame()
 {
-	const auto p = mapToGlobal( m_recordArea->pos() );
+	const auto p = mapToGlobal( m_recordArea->pos() - QPoint( 1, 1 ) );
 
 	try {
 		auto qimg = QApplication::primaryScreen()->grabWindow( 0, p.x(), p.y(),
-			m_recordArea->width(), m_recordArea->height() ).toImage();
+			m_recordArea->width() + 2, m_recordArea->height() + 2 ).toImage();
 
 		if( m_grabCursor )
 		{
