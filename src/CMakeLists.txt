@@ -24,7 +24,7 @@ endif()
 
 include_directories( ${ImageMagick_INCLUDE_DIRS} )
 
-add_executable( GIFRecorder.App ${SRC} )
+add_executable( GIFRecorder.App WIN32 ${SRC} )
 
 target_link_libraries( GIFRecorder.App ${ImageMagick_LIBRARIES} Qt6::Widgets Qt6::Gui Qt6::Core )
 
