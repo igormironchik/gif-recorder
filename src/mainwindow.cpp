@@ -786,7 +786,7 @@ MainWindow::save( const QString & fileName )
 		WriteGIF runnable( m_frames.begin(), m_frames.end(), fileName.toStdString() );
 		QThreadPool::globalInstance()->start( &runnable );
 
-		while( !QThreadPool::globalInstance()->waitForDone( 100 / 6 ) )
+		while( !QThreadPool::globalInstance()->waitForDone( 10 ) )
 			QApplication::processEvents();
 
 		m_busy = false;
