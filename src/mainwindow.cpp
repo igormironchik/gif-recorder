@@ -691,11 +691,11 @@ grabMouseCursor( const QRect & r, const QImage & i )
 void
 MainWindow::makeFrame()
 {
-	const auto p = mapToGlobal( m_recordArea->pos() - QPoint( 1, 1 ) );
+	const auto p = mapToGlobal( m_c->pos() - QPoint( 1, 1 - m_title->height() ) );
 
 	try {
 		auto qimg = QApplication::primaryScreen()->grabWindow( 0, p.x(), p.y(),
-			m_recordArea->width() + 2, m_recordArea->height() + 2 ).toImage();
+			m_recordArea->width() + 2, m_c->height() - m_title->height() + 2 ).toImage();
 
 		if( m_grabCursor )
 		{
@@ -815,7 +815,7 @@ MainWindow::save( const QString & fileName )
 void
 MainWindow::closeEvent( QCloseEvent * e )
 {
-	if ( m_busy )
+	if( m_busy )
 	{
 		const auto btn = QMessageBox::question( this, tr( "GIF recorder is busy..." ),
 			tr( "GIF recorder is busy.\nDo you want to terminate the application?" ) );
