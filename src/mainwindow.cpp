@@ -363,6 +363,7 @@ MainWindow::MainWindow()
 	m_c = new QWidget( this );
 	auto vlayout = new QVBoxLayout( m_c );
 	vlayout->setContentsMargins( 0, 0, 0, 0 );
+	vlayout->setSpacing( 0 );
 	m_title = new TitleWidget( m_c, this );
 	auto layout = new QHBoxLayout( m_title );
 	layout->setContentsMargins( 5, 5, 5, 5 );
@@ -411,8 +412,8 @@ MainWindow::resizeEvent( QResizeEvent * e )
 	QPainter p( &m_mask );
 	p.setPen( Qt::color0 );
 	p.setBrush( Qt::color0 );
-	auto h = 6 + m_title->sizeHint().height() + 1;
-	p.drawRect( 6, h, e->size().width() - 12, e->size().height() - h - 6 );
+	auto h = 5 + m_title->sizeHint().height() + 1;
+	p.drawRect( 5, h, e->size().width() - 10 - 1, e->size().height() - h - 5 - 1 );
 
 	setMask( m_mask );
 
@@ -691,11 +692,11 @@ grabMouseCursor( const QRect & r, const QImage & i )
 void
 MainWindow::makeFrame()
 {
-	const auto p = mapToGlobal( m_c->pos() - QPoint( 1, 1 - m_title->height() ) );
+	const auto p = mapToGlobal( QPoint( m_c->pos().x() - 1, m_c->pos().y() + m_title->height() ) );
 
 	try {
 		auto qimg = QApplication::primaryScreen()->grabWindow( 0, p.x(), p.y(),
-			m_recordArea->width() + 2, m_c->height() - m_title->height() + 2 ).toImage();
+			m_recordArea->width() + 2, m_recordArea->height() + 1 ).toImage();
 
 		if( m_grabCursor )
 		{
