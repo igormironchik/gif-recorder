@@ -26,14 +26,9 @@
 // GIF recorder include.
 #include "mainwindow.hpp"
 
-// Magick++ include.
-#include <Magick++.h>
-
 
 int main( int argc, char ** argv )
 {
-	Magick::InitializeMagick( nullptr );
-
 	QApplication app( argc, argv );
 
 	QIcon appIcon( QStringLiteral( ":/img/icon_256x256.png" ) );

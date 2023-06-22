@@ -13,9 +13,6 @@ SET( CMAKE_CXX_STANDARD_REQUIRED ON )
 
 project( GifRecorder )
 
-find_package( ImageMagick 6 EXACT REQUIRED COMPONENTS Magick++ MagickCore )
-
-add_definitions( -DMAGICKCORE_QUANTUM_DEPTH=16 )
-add_definitions( -DMAGICKCORE_HDRI_ENABLE=0 )
+add_subdirectory( 3rdparty/bitmap )
 
 add_subdirectory( src )

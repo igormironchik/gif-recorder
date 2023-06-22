@@ -30,13 +30,11 @@
 #include <QAbstractButton>
 #include <QTimer>
 #include <QLabel>
+#include <QVector>
 
-// Magick++ include.
-#include <Magick++.h>
-#include <Magick++/Exception.h>
-
-// C++ include.
-#include <vector>
+// bitmap include.
+#include <bmp.h>
+#include <gif.h>
 
 
 class MainWindow;
@@ -188,6 +186,6 @@ private:
 	bool m_grabCursor = true;
 	bool m_recording = false;
 	bool m_busy = false;
-	std::vector< Magick::Image > m_frames;
+	QVector< QImage > m_frames;
 	QImage m_img;
 };// class MainWindow

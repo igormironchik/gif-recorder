@@ -474,40 +474,6 @@ MainWindow::onTimer()
 
 namespace /* anonymous */ {
 
-Magick::Image
-convert( const QImage & img )
-{
-	Magick::Image mimg( Magick::Geometry( img.width(), img.height() ),
-		Magick::ColorRGB( 0.0, 0.0, 0.0 ) );
-
-	const double scale = 1.0 / 256.0;
-
-	mimg.modifyImage();
-
-	Magick::PixelPacket * pixels;
-	Magick::ColorRGB mgc;
-
-	for( int y = 0; y < img.height(); ++y)
-	{
-		pixels = mimg.setPixels( 0, y, mimg.columns(), 1 );
-
-		for( int x = 0; x < img.width(); ++x )
-		{
-			QColor pix = img.pixel( x, y );
-
-			mgc.red( scale * pix.red() );
-			mgc.green( scale * pix.green() );
-			mgc.blue( scale * pix.blue() );
-
-			*pixels++ = mgc;
-		}
-
-		mimg.syncPixels();
-	}
-
-	return mimg;
-}
-
 #ifdef Q_OS_LINUX
 
 QImage qimageFromXImage( XImage * xi )
@@ -583,7 +549,7 @@ grabMouseCursor( const QRect & r, const QImage & i )
 
 	cursorPos = r.intersects( { QPoint( cursor->x - cursor->xhot, cursor->y - cursor->yhot ),
 			QSize( cursor->width, cursor->height ) } ) ?
-		QPoint( cursor->x - cursor->xhot- r.x(), cursor->y - cursor->yhot - r.y() ) :
+		QPoint( cursor->x - cursor->xhot - r.x(), cursor->y - cursor->yhot - r.y() ) :
 		QPoint( -1, -1 );
 
 	std::vector< uint32_t > pixels( cursor->width * cursor->height );
@@ -595,7 +561,7 @@ grabMouseCursor( const QRect & r, const QImage & i )
 		pixels[ i ] = cursor->pixels[ i ];
 
 	cursorImage = QImage( (uchar*)( pixels.data() ), w, h,
-		QImage::Format_ARGB32_Premultiplied).copy();
+		QImage::Format_ARGB32_Premultiplied).convertedTo( QImage::Format_ARGB32 ).copy();
 
 	XFree( cursor );
 
@@ -694,33 +660,22 @@ MainWindow::makeFrame()
 {
 	const auto p = mapToGlobal( QPoint( m_c->pos().x() - 1, m_c->pos().y() + m_title->height() ) );
 
-	try {
-		auto qimg = QApplication::primaryScreen()->grabWindow( 0, p.x(), p.y(),
-			m_recordArea->width() + 2, m_recordArea->height() + 1 ).toImage();
+	auto qimg = QApplication::primaryScreen()->grabWindow( 0, p.x(), p.y(),
+		m_recordArea->width() + 2, m_recordArea->height() + 1 )
+			.toImage().convertedTo( QImage::Format_ARGB32 );
 
-		if( m_grabCursor )
-		{
-			QImage ci;
-			QRect cr;
-			std::tie( ci, cr ) = grabMouseCursor( QRect( mapToGlobal( m_recordArea->pos() ),
-				QSize( m_recordArea->width(), m_recordArea->height() ) ), qimg );
-
-			ci.save( "1.png" );
-			QPainter p( &qimg );
-			p.drawImage( cr, ci, ci.rect() );
-		}
-
-		auto img = convert( qimg );
-		img.animationDelay( 100 / m_fps );
-		m_frames.push_back( img );
-	}
-	catch( const Magick::Exception & )
+	if( m_grabCursor )
 	{
-		QMessageBox::critical( this, tr( "Resources exceeded..." ),
-			tr( "You were used all available to ImageMagick resources. Recording is stopped." ) );
+		QImage ci;
+		QRect cr;
+		std::tie( ci, cr ) = grabMouseCursor( QRect( p,
+			QSize( m_recordArea->width() + 2, m_recordArea->height() + 1 ) ), qimg );
 
-		onRecord();
+		QPainter p( &qimg );
+		p.drawImage( cr, ci, ci.rect() );
 	}
+
+	m_frames.push_back( qimg );
 }
 
 namespace /* anonymous */ {
@@ -729,43 +684,41 @@ class WriteGIF final
 	:	public QRunnable
 {
 public:
-	WriteGIF( std::vector< Magick::Image >::iterator first,
-		std::vector< Magick::Image >::iterator last,
-		const std::string & fileName )
-		:	m_first( first )
-		,	m_last( last )
+	WriteGIF( const QVector< QImage > & container, const QString & fileName, int fps )
+		:	m_container( container )
 		,	m_fileName( fileName )
+		,	m_fps( fps )
 	{
 		setAutoDelete( false );
 	}
 
-	~WriteGIF() noexcept override = default;
-
 	void run() override
 	{
-		try {
-			std::vector< Magick::Image > tmp;
-
-			Magick::optimizeImageLayers( &tmp, m_first, m_last );
-
-			Magick::writeImages( tmp.begin(), tmp.end(), m_fileName );
-		}
-		catch( ... )
+		if( !m_container.isEmpty() )
 		{
-			m_eptr = std::current_exception();
-		}
-	}
+			auto gif = gif_create( m_container.first().width(),
+				m_container.first().height() );
+			gif->repetitions = 0;
 
-	std::exception_ptr exception() const
-	{
-		return m_eptr;
+			for( const auto & i : m_container )
+			{
+				auto b = bm_create( i.width(), i.height() );
+				memcpy( bm_raw_data( b ), i.bits(), i.sizeInBytes() );
+				auto frame = gif_add_frame( gif, b );
+				frame->delay = 100 / m_fps;
+				bm_free( b );
+			}
+
+			gif_save( gif, m_fileName.toLocal8Bit().data() );
+
+			gif_free( gif );
+		}
 	}
 
 private:
-	std::vector< Magick::Image >::iterator m_first;
-	std::vector< Magick::Image >::iterator m_last;
-	std::string m_fileName;
-	std::exception_ptr m_eptr;
+	const QVector< QImage > & m_container;
+	QString m_fileName;
+	int m_fps;
 }; // class WriteGIF
 
 } /* namespase anonymous */
@@ -780,30 +733,15 @@ MainWindow::save( const QString & fileName )
 
 	QApplication::processEvents();
 
-	try {
-		m_busy = true;
+	m_busy = true;
 
-		WriteGIF runnable( m_frames.begin(), m_frames.end(), fileName.toStdString() );
-		QThreadPool::globalInstance()->start( &runnable );
+	WriteGIF runnable( m_frames, fileName, m_fps );
+	QThreadPool::globalInstance()->start( &runnable );
 
-		while( !QThreadPool::globalInstance()->waitForDone( 10 ) )
-			QApplication::processEvents();
+	while( !QThreadPool::globalInstance()->waitForDone( 5 ) )
+		QApplication::processEvents();
 
-		m_busy = false;
-
-		if( runnable.exception() )
-			std::rethrow_exception( runnable.exception() );
-	}
-	catch( const Magick::Exception & x )
-	{
-		QMessageBox::critical( this, tr( "Failed to save GIF..." ),
-			QString::fromLocal8Bit( x.what() ) );
-	}
-	catch( const std::exception & x )
-	{
-		QMessageBox::critical( this, tr( "Failed to save GIF..." ),
-			QString::fromLocal8Bit( x.what() ) );
-	}
+	m_busy = false;
 
 	m_recordButton->setEnabled( true );
 	m_settingsButton->setEnabled( true );
