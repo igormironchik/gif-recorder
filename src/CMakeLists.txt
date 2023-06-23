@@ -22,11 +22,11 @@ if( WIN32 )
 	list( APPEND SRC gif-recorder.rc )
 endif()
 
-include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/../3rdparty/bitmap )
+include_directories( ${ImageMagick_INCLUDE_DIRS} )
 
 add_executable( GIFRecorder.App WIN32 ${SRC} )
 
-target_link_libraries( GIFRecorder.App bitmap Qt6::Widgets Qt6::Gui Qt6::Core )
+target_link_libraries( GIFRecorder.App ${ImageMagick_LIBRARIES} Qt6::Widgets Qt6::Gui Qt6::Core )
 
 if( UNIX )
 	target_link_libraries( GIFRecorder.App Xfixes X11 )
