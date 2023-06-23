@@ -693,19 +693,18 @@ void
 MainWindow::makeFrame()
 {
 	const auto p = mapToGlobal( QPoint( m_c->pos().x() - 1, m_c->pos().y() + m_title->height() ) );
+	const auto s = QSize( m_recordArea->width() + 2, m_recordArea->height() + 1 );
 
 	try {
 		auto qimg = QApplication::primaryScreen()->grabWindow( 0, p.x(), p.y(),
-			m_recordArea->width() + 2, m_recordArea->height() + 1 ).toImage();
+			s.width(), s.height() ).toImage();
 
 		if( m_grabCursor )
 		{
 			QImage ci;
 			QRect cr;
-			std::tie( ci, cr ) = grabMouseCursor( QRect( mapToGlobal( m_recordArea->pos() ),
-				QSize( m_recordArea->width(), m_recordArea->height() ) ), qimg );
+			std::tie( ci, cr ) = grabMouseCursor( QRect( p, s ), qimg );
 
-			ci.save( "1.png" );
 			QPainter p( &qimg );
 			p.drawImage( cr, ci, ci.rect() );
 		}
