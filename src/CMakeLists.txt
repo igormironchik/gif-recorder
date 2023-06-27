@@ -1,5 +1,5 @@
 
-project( GIFRecorder.App )
+project( gif-recorder )
 
 set( CMAKE_AUTOMOC ON )
 set( CMAKE_AUTORCC ON )
@@ -24,10 +24,10 @@ endif()
 
 include_directories( ${ImageMagick_INCLUDE_DIRS} )
 
-add_executable( GIFRecorder.App WIN32 ${SRC} )
+add_executable( gif-recorder WIN32 ${SRC} )
 
-target_link_libraries( GIFRecorder.App ${ImageMagick_LIBRARIES} Qt6::Widgets Qt6::Gui Qt6::Core )
+target_link_libraries( gif-recorder ${ImageMagick_LIBRARIES} Qt6::Widgets Qt6::Gui Qt6::Core )
 
 if( UNIX )
-	target_link_libraries( GIFRecorder.App Xfixes X11 )
+	target_link_libraries( gif-recorder Xfixes X11 )
 endif()
