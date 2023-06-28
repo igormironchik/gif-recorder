@@ -25,6 +25,7 @@
 
 // GIF recorder include.
 #include "mainwindow.hpp"
+#include "event_monitor.hpp"
 
 // Magick++ include.
 #include <Magick++.h>
@@ -49,5 +50,14 @@ int main( int argc, char ** argv )
 	w.resize( 800, 600 );
 	w.show();
 
-	return app.exec();
+	EventMonitor m;
+	m.start();
+
+	const auto ret = QApplication::exec();
+
+	m.stopListening();
+	m.quit();
+	m.wait();
+
+	return ret;
 }

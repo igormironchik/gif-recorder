@@ -14,7 +14,9 @@ set( SRC main.cpp
 	mainwindow.cpp
 	settings.hpp
 	settings.cpp
-	settings.ui )
+	settings.ui
+	event_monitor.hpp
+	event_monitor.cpp )
 
 qt6_add_resources( SRC resources.qrc )
 
@@ -29,5 +31,5 @@ add_executable( gif-recorder WIN32 ${SRC} )
 target_link_libraries( gif-recorder ${ImageMagick_LIBRARIES} Qt6::Widgets Qt6::Gui Qt6::Core )
 
 if( UNIX )
-	target_link_libraries( gif-recorder Xfixes X11 )
+	target_link_libraries( gif-recorder Xtst Xfixes X11 )
 endif()
