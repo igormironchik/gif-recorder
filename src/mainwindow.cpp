@@ -575,9 +575,10 @@ grabMouseCursor( const QRect & r, const QImage & i )
 	int h = 0;
 
 #ifdef Q_OS_LINUX
-	// auto display = QApplication::platformNativeInterface();
+	Display * display = XOpenDisplay( nullptr );
 
-	Display* display = XOpenDisplay( nullptr );
+	if( !display )
+		return { cursorImage, { cursorPos, QSize( w, h ) } };
 
 	XFixesCursorImage * cursor = XFixesGetCursorImage( display );
 
@@ -600,6 +601,7 @@ grabMouseCursor( const QRect & r, const QImage & i )
 	XFree( cursor );
 
 	XCloseDisplay( display );
+
 #elif defined( Q_OS_WINDOWS )
 	CURSORINFO cursor = { sizeof( cursor ) };
 
