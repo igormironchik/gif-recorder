@@ -742,7 +742,7 @@ MainWindow::makeFrame()
 
 				p.setPen( Qt::NoPen );
 				p.setBrush( QBrush( gradient ) );
-				p.drawEllipse( cp.x() - cr.width() / 2, cp.y() - cr.height() / 2,
+				p.drawEllipse( cp.x() - cr.width() / 2, cp.y() - cr.width() / 2,
 					cr.width(), cr.width() );
 			}
 
