@@ -145,6 +145,9 @@ private:
 }; // class CloseButton
 
 
+class EventMonitor;
+
+
 //
 // MainWindow
 //
@@ -156,7 +159,7 @@ class MainWindow
 	Q_OBJECT
 
 public:
-	MainWindow();
+	explicit MainWindow( EventMonitor * eventMonitor );
 	~MainWindow() override = default;
 
 protected:
@@ -167,6 +170,8 @@ private slots:
 	void onSettings();
 	void onRecord();
 	void onTimer();
+	void onMousePressed();
+	void onMouseReleased();
 
 private:
 	void makeFrame();
@@ -186,8 +191,10 @@ private:
 	QBitmap m_mask;
 	int m_fps = 24;
 	bool m_grabCursor = true;
+	bool m_drawMouseClick = true;
 	bool m_recording = false;
 	bool m_busy = false;
+	bool m_isMouseButtonPressed = false;
 	std::vector< Magick::Image > m_frames;
 	QImage m_img;
 };// class MainWindow

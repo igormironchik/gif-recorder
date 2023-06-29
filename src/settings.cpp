@@ -32,13 +32,14 @@
 // Settings
 //
 
-Settings::Settings( int fpsValue, bool grabCursorValue, QWidget * parent )
+Settings::Settings( int fpsValue, bool grabCursorValue, bool drawMouseClicks, QWidget * parent )
 	:	QDialog( parent )
 {
 	m_ui.setupUi( this );
 
 	m_ui.m_fps->setValue( fpsValue );
 	m_ui.m_cursor->setChecked( grabCursorValue );
+	m_ui.m_click->setChecked( drawMouseClicks );
 }
 
 int
@@ -51,4 +52,10 @@ bool
 Settings::grabCursor() const
 {
 	return m_ui.m_cursor->isChecked();
+}
+
+bool
+Settings::drawMouseClicks() const
+{
+	return m_ui.m_click->isChecked();
 }

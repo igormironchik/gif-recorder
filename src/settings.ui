@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>400</width>
-    <height>112</height>
+    <height>141</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -42,6 +42,16 @@
     <widget class="QCheckBox" name="m_cursor">
      <property name="text">
       <string>Grab mouse cursor</string>
+     </property>
+     <property name="checked">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="m_click">
+     <property name="text">
+      <string>Draw mouse clicks</string>
      </property>
      <property name="checked">
       <bool>true</bool>

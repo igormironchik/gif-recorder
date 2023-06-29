@@ -23,6 +23,7 @@
 // GIF recorder include.
 #include "mainwindow.hpp"
 #include "settings.hpp"
+#include "event_monitor.hpp"
 
 // Qt include.
 #include <QHBoxLayout>
@@ -340,7 +341,7 @@ CloseButton::leaveEvent( QEvent * event )
 // MainWindow
 //
 
-MainWindow::MainWindow()
+MainWindow::MainWindow( EventMonitor * eventMonitor )
 	:	QWidget( nullptr, Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint )
 {
 	setAttribute( Qt::WA_TranslucentBackground );
@@ -401,6 +402,11 @@ MainWindow::MainWindow()
 
 	m_timer = new QTimer( this );
 	connect( m_timer, &QTimer::timeout, this, &MainWindow::onTimer );
+
+	connect( eventMonitor, &EventMonitor::buttonPress,
+		this, &MainWindow::onMousePressed );
+	connect( eventMonitor, &EventMonitor::buttonRelease,
+		this, &MainWindow::onMouseReleased );
 }
 
 void
@@ -423,12 +429,13 @@ MainWindow::resizeEvent( QResizeEvent * e )
 void
 MainWindow::onSettings()
 {
-	Settings dlg( m_fps, m_grabCursor, this );
+	Settings dlg( m_fps, m_grabCursor, m_drawMouseClick, this );
 
 	if( dlg.exec() == QDialog::Accepted )
 	{
 		m_fps = dlg.fps();
 		m_grabCursor = dlg.grabCursor();
+		m_drawMouseClick = dlg.drawMouseClicks();
 	}
 }
 
@@ -470,6 +477,18 @@ void
 MainWindow::onTimer()
 {
 	makeFrame();
+}
+
+void
+MainWindow::onMousePressed()
+{
+	m_isMouseButtonPressed = true;
+}
+
+void
+MainWindow::onMouseReleased()
+{
+	m_isMouseButtonPressed = false;
 }
 
 namespace /* anonymous */ {
@@ -566,11 +585,12 @@ QImage qimageFromXImage( XImage * xi )
 
 #endif // Q_OS_LINUX
 
-QPair< QImage, QRect >
+std::tuple< QImage, QRect, QPoint >
 grabMouseCursor( const QRect & r, const QImage & i )
 {
 	QImage cursorImage;
 	QPoint cursorPos( -1, -1 );
+	QPoint clickPos( -1, -1 );
 	int w = 0;
 	int h = 0;
 
@@ -578,7 +598,7 @@ grabMouseCursor( const QRect & r, const QImage & i )
 	Display * display = XOpenDisplay( nullptr );
 
 	if( !display )
-		return { cursorImage, { cursorPos, QSize( w, h ) } };
+		return { cursorImage, { cursorPos, QSize( w, h ) }, clickPos };
 
 	XFixesCursorImage * cursor = XFixesGetCursorImage( display );
 
@@ -591,6 +611,8 @@ grabMouseCursor( const QRect & r, const QImage & i )
 
 	w = cursorPos.x() != -1 ? cursor->width : 0;
 	h = cursorPos.y() != -1 ? cursor->height : 0;
+
+	clickPos = QPoint( cursor->x - r.x(), cursor->y - r.y() );
 
 	for( size_t i = 0; i < pixels.size(); ++i )
 		pixels[ i ] = cursor->pixels[ i ];
@@ -667,6 +689,8 @@ grabMouseCursor( const QRect & r, const QImage & i )
 				ctl - r.topLeft() :	QPoint( -1, -1 );
 			w = cursorPos.x() != -1 ? w : 0;
 			h = cursorPos.y() != -1 ? h : 0;
+			clickPos = QPoint( cursor.ptScreenPos.x - r.x(),
+				cursor.ptScreenPos.y - r.y() );
 			cursorImage = img.copy();
 
 			if( info.hbmMask )
@@ -686,7 +710,7 @@ grabMouseCursor( const QRect & r, const QImage & i )
 	}
 #endif
 
-	return { cursorImage, { cursorPos, QSize( w, h ) } };
+	return { cursorImage, { cursorPos, QSize( w, h ) }, clickPos };
 }
 
 } /* namespace anonymous */
@@ -705,9 +729,23 @@ MainWindow::makeFrame()
 		{
 			QImage ci;
 			QRect cr;
-			std::tie( ci, cr ) = grabMouseCursor( QRect( p, s ), qimg );
+			QPoint cp;
+			std::tie( ci, cr, cp ) = grabMouseCursor( QRect( p, s ), qimg );
 
 			QPainter p( &qimg );
+
+			if( m_drawMouseClick && m_isMouseButtonPressed )
+			{
+				QRadialGradient gradient( cp, cr.width() / 2 );
+				gradient.setColorAt( 0, Qt::transparent );
+				gradient.setColorAt( 1, Qt::yellow );
+
+				p.setPen( Qt::NoPen );
+				p.setBrush( QBrush( gradient ) );
+				p.drawEllipse( cp.x() - cr.width() / 2, cp.y() - cr.height() / 2,
+					cr.width(), cr.width() );
+			}
+
 			p.drawImage( cr, ci, ci.rect() );
 		}
 

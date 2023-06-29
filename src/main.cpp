@@ -46,11 +46,12 @@ int main( int argc, char ** argv )
 	appIcon.addFile( QStringLiteral( ":/img/icon_16x16.png" ) );
 	app.setWindowIcon( appIcon );
 
-	MainWindow w;
+	EventMonitor m;
+
+	MainWindow w( &m );
 	w.resize( 800, 600 );
 	w.show();
 
-	EventMonitor m;
 	m.start();
 
 	const auto ret = QApplication::exec();

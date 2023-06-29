@@ -40,11 +40,12 @@ class Settings
 	Q_OBJECT
 
 public:
-	Settings( int fpsValue, bool grabCursorValue, QWidget * parent );
+	Settings( int fpsValue, bool grabCursorValue, bool drawMouseClicks, QWidget * parent );
 	~Settings() override = default;
 
 	int fps() const;
 	bool grabCursor() const;
+	bool drawMouseClicks() const;
 
 private:
 	Q_DISABLE_COPY( Settings )
