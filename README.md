@@ -1,4 +1,4 @@
-# GIF recorder
+# `GIF` recorder
 
 This is a `GIF` recorder for `Windows` and `Linux`. License of the code is `GPL Version 3`.
 
