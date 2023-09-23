@@ -777,10 +777,16 @@ MainWindow::makeFrame()
 	}
 	catch( const Magick::Exception & )
 	{
-		QMessageBox::critical( this, tr( "Resources exceeded..." ),
-			tr( "You were used all available to ImageMagick resources. Recording is stopped." ) );
+		m_recordButton->setText( tr( "Record" ) );
+		m_settingsButton->setEnabled( true );
+		m_timer->stop();
+		m_frames.clear();
+		m_recording = false;
 
-		onRecord();
+		QMessageBox::critical( this, tr( "Resources exceeded..." ),
+			tr( "You were used all available resources. Recording is stopped. "
+				"Processing is impossible. Try adjust options in <b>policy.xml</b> "
+				"configuration file of <b>ImageMagick</b>." ) );
 	}
 }
 
