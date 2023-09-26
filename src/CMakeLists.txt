@@ -24,11 +24,12 @@ if( WIN32 )
 	list( APPEND SRC gif-recorder.rc )
 endif()
 
-include_directories( ${ImageMagick_INCLUDE_DIRS} )
+include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/../3rdparty/qgiflib/src
+	${CMAKE_CURRENT_SOURCE_DIR}/../3rdparty/qgiflib/3rdparty/giflib )
 
 add_executable( gif-recorder WIN32 ${SRC} )
 
-target_link_libraries( gif-recorder ${ImageMagick_LIBRARIES} Qt6::Widgets Qt6::Gui Qt6::Core )
+target_link_libraries( gif-recorder qgiflib Qt6::Widgets Qt6::Gui Qt6::Core )
 
 if( UNIX )
 	target_link_libraries( gif-recorder Xtst Xfixes X11 )

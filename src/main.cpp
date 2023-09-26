@@ -27,14 +27,9 @@
 #include "mainwindow.hpp"
 #include "event_monitor.hpp"
 
-// Magick++ include.
-#include <Magick++.h>
-
 
 int main( int argc, char ** argv )
 {
-	Magick::InitializeMagick( nullptr );
-
 	QApplication app( argc, argv );
 
 	QIcon appIcon( QStringLiteral( ":/img/icon_256x256.png" ) );
