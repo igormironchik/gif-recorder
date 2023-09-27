@@ -465,6 +465,8 @@ MainWindow::onRecord()
 		m_frames.clear();
 		m_dir.remove();
 		m_counter = 0;
+		m_elapsed.invalidate();
+		m_delays.clear();
 	}
 	else
 	{
@@ -472,6 +474,7 @@ MainWindow::onRecord()
 		m_settingsButton->setEnabled( false );
 		m_timer->start( 1000 / m_fps );
 		m_dir = QTemporaryDir( "./" );
+		m_elapsed.start();
 		makeFrame();
 	}
 
@@ -705,6 +708,9 @@ bool isMouseButtonPressed()
 void
 MainWindow::makeFrame()
 {
+	m_delays.push_back( m_elapsed.elapsed() );
+	m_elapsed.restart();
+
 	const auto p = mapToGlobal( QPoint( m_c->pos().x() - 1, m_c->pos().y() + m_title->height() ) );
 	const auto s = QSize( m_recordArea->width() + 2, m_recordArea->height() + 1 );
 
@@ -751,10 +757,10 @@ class WriteGIF final
 	:	public QRunnable
 {
 public:
-	WriteGIF( const QStringList & frames, const QString & fileName, int fps )
+	WriteGIF( const QStringList & frames, const QVector< int > & delays, const QString & fileName )
 		:	m_frames( frames )
+		,	m_delays( delays )
 		,	m_fileName( fileName )
-		,	m_fps( fps )
 	{
 		setAutoDelete( false );
 	}
@@ -763,14 +769,13 @@ public:
 
 	void run() override
 	{
-		QGifLib::Gif::write( m_fileName, m_frames,
-			QVector< int > ( m_frames.size(), 1000 / m_fps ), 0 );
+		QGifLib::Gif::write( m_fileName, m_frames, m_delays, 0 );
 	}
 
 private:
-	QStringList m_frames;
+	const QStringList & m_frames;
+	const QVector< int > & m_delays;
 	QString m_fileName;
-	int m_fps;
 }; // class WriteGIF
 
 } /* namespase anonymous */
@@ -787,7 +792,7 @@ MainWindow::save( const QString & fileName )
 
 	m_busy = true;
 
-	WriteGIF runnable( m_frames, fileName, m_fps );
+	WriteGIF runnable( m_frames, m_delays, fileName );
 	QThreadPool::globalInstance()->start( &runnable );
 
 	while( !QThreadPool::globalInstance()->waitForDone( 10 ) )

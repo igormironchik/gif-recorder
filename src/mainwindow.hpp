@@ -31,6 +31,7 @@
 #include <QTimer>
 #include <QLabel>
 #include <QTemporaryDir>
+#include <QElapsedTimer>
 
 
 class MainWindow;
@@ -192,4 +193,6 @@ private:
 	QTemporaryDir m_dir;
 	QStringList m_frames;
 	qsizetype m_counter = 0;
+	QElapsedTimer m_elapsed;
+	QVector< int > m_delays;
 };// class MainWindow
